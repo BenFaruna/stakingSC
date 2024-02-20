@@ -12,8 +12,8 @@ error UNSTAKE_TIME_NOT_ELAPSED_ERROR();
 
 
 contract Staking {
-    uint constant minUnlockTime = 1 minutes;
-    uint constant stakingRewardPerMinUnlockTime = 10; // this represents 15% per minute
+    uint constant minUnlockTime = 1 days;
+    uint constant stakingRewardPerMinUnlockTime = 10; // this represents 10% per minute
 
     mapping(address => uint) public stakedAmount;
     mapping (address => uint) public stakingTime;
@@ -22,7 +22,8 @@ contract Staking {
 
     IERC20 tokenContract;
 
-    event Withdrawal(uint amount, uint when);
+    event Unstake(address indexed stakes, uint amount, uint when);
+    event Stake(address indexed staker, uint amount, uint when);
 
     constructor(address tokenContractAddress) payable {
         if (tokenContractAddress == address(0)) {
@@ -43,6 +44,7 @@ contract Staking {
 
         stakedAmount[msg.sender] = stakedAmount[msg.sender] + amount;
         stakingTime[msg.sender] = block.timestamp;
+        emit Stake(msg.sender, amount, block.timestamp);
     }
 
     function unstake(uint amount) external {
@@ -62,6 +64,7 @@ contract Staking {
         stakedAmount[msg.sender] = remainingAmount;
         stakingTime[msg.sender] = block.timestamp;
         require(tokenContract.transfer(msg.sender, amount), "Transfer failed");
+        emit Unstake(msg.sender, amount, block.timestamp);
     }
 
     function _calculateAccrual() view internal returns (uint) {

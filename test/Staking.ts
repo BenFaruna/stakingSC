@@ -36,7 +36,7 @@ describe("Staking", function () {
             await expect(await staking.stakedAmount(accountOne.getAddress())).to.be.equal(ethers.parseEther("100"));
         });
         it("Should update the contract balance by user stake", async function () {
-            const { staking, token, accountOne, accountTwo } = await loadFixture(deployStakingFixture);
+            const { staking, token, accountOne } = await loadFixture(deployStakingFixture);
             await token.connect(accountOne).approve(staking.getAddress(), ethers.parseEther("100"));
             await staking.connect(accountOne).stake(ethers.parseEther("100"));
 
@@ -45,7 +45,7 @@ describe("Staking", function () {
         it("Should not be able to stake 0 tokens", async function () {
             const { staking, token, accountOne } = await loadFixture(deployStakingFixture);
             await token.connect(accountOne).approve(staking.getAddress(), ethers.parseEther("100"));
-            await expect(staking.connect(accountOne).stake(ethers.parseEther("0"))).to.be.reverted;
+            await expect(staking.connect(accountOne).stake(ethers.parseEther("0"))).to.be.revertedWithCustomError(staking, "ZERO_STAKE_ERROR");
         });
         it("Should create a time entry when user calls stake", async function () {
             const { staking, token, accountOne } = await loadFixture(deployStakingFixture);
@@ -60,20 +60,20 @@ describe("Staking", function () {
             const { staking, token, accountOne } = await loadFixture(deployStakingFixture);
             await token.connect(accountOne).approve(staking.getAddress(), ethers.parseEther("100"));
             await staking.connect(accountOne).stake(ethers.parseEther("100"));
-            await expect(staking.connect(accountOne).unstake(ethers.parseEther("0"))).to.be.reverted;
+            await expect(staking.connect(accountOne).unstake(ethers.parseEther("0"))).to.be.revertedWithCustomError(staking, "ZERO_UNSTAKE_ERROR");
         });
         it("Should revert when user tries to unstake more than staked amount", async function () {
             const { staking, token, accountOne } = await loadFixture(deployStakingFixture);
             await token.connect(accountOne).approve(staking.getAddress(), ethers.parseEther("100"));
             await staking.connect(accountOne).stake(ethers.parseEther("100"));
-            await expect(staking.connect(accountOne).unstake(ethers.parseEther("200"))).to.be.reverted;
+            await expect(staking.connect(accountOne).unstake(ethers.parseEther("200"))).to.be.revertedWithCustomError(staking, "UNSTAKE_AMOUNT_EXCEEDS_STAKED_AMOUNT_ERROR");
         });
         it("Should revert when user tries to unstake before the staking period", async function () {
             const { staking, token, accountOne } = await loadFixture(deployStakingFixture);
             await token.connect(accountOne).approve(staking.getAddress(), ethers.parseEther("100"));
             await staking.connect(accountOne).stake(ethers.parseEther("100"));
             await time.increase(20);
-            await expect(staking.connect(accountOne).unstake(ethers.parseEther("100"))).to.be.reverted;
+            await expect(staking.connect(accountOne).unstake(ethers.parseEther("100"))).to.be.revertedWithCustomError(staking, "UNSTAKE_TIME_NOT_ELAPSED_ERROR");
         });
         it("Should payout the right amount user requested to unstake", async function () {
             const { staking, token, accountOne, accountTwo } = await loadFixture(deployStakingFixture);
