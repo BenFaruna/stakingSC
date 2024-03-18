@@ -10,8 +10,8 @@ error UNSTAKE_AMOUNT_EXCEEDS_STAKED_AMOUNT_ERROR();
 error UNSTAKE_TIME_NOT_ELAPSED_ERROR();
 
 contract Staking {
-    uint constant minUnlockTime = 1 minutes;
-    uint constant stakingRewardPerMinUnlockTime = 10; // this represents 1% per minute
+    uint constant minUnlockTime = 1 hours;
+    uint constant stakingRewardPerMinUnlockTime = 1; // this represents 1% per minute
 
     mapping(address => uint) public stakedAmount;
     mapping(address => uint) public stakingTime;
@@ -56,7 +56,7 @@ contract Staking {
     }
 
     function unstake(uint amount) external {
-        if (amount <= 0) {
+        if (amount == 0) {
             revert ZERO_UNSTAKE_ERROR();
         }
 
