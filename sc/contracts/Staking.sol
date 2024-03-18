@@ -9,14 +9,12 @@ error ZERO_UNSTAKE_ERROR();
 error UNSTAKE_AMOUNT_EXCEEDS_STAKED_AMOUNT_ERROR();
 error UNSTAKE_TIME_NOT_ELAPSED_ERROR();
 
-
-
 contract Staking {
-    uint constant minUnlockTime = 1 days;
-    uint constant stakingRewardPerMinUnlockTime = 10; // this represents 10% per minute
+    uint constant minUnlockTime = 1 minutes;
+    uint constant stakingRewardPerMinUnlockTime = 10; // this represents 1% per minute
 
     mapping(address => uint) public stakedAmount;
-    mapping (address => uint) public stakingTime;
+    mapping(address => uint) public stakingTime;
 
     address public owner;
 
@@ -40,7 +38,17 @@ contract Staking {
         if (amount == 0) {
             revert ZERO_STAKE_ERROR();
         }
-        require(tokenContract.transferFrom(msg.sender, address(this), amount), "Transfer failed");
+
+        if (stakedAmount[msg.sender] > 0) {
+            uint reward = _calculateAccrual(msg.sender);
+            stakedAmount[msg.sender] = stakedAmount[msg.sender] + reward;
+            stakingTime[msg.sender] = block.timestamp;
+        }
+
+        require(
+            tokenContract.transferFrom(msg.sender, address(this), amount),
+            "Transfer failed"
+        );
 
         stakedAmount[msg.sender] = stakedAmount[msg.sender] + amount;
         stakingTime[msg.sender] = block.timestamp;
@@ -51,13 +59,15 @@ contract Staking {
         if (amount <= 0) {
             revert ZERO_UNSTAKE_ERROR();
         }
-        uint reward = _calculateAccrual();
+
+        if ((block.timestamp - stakingTime[msg.sender]) < minUnlockTime) {
+            revert UNSTAKE_TIME_NOT_ELAPSED_ERROR();
+        }
+
+        uint reward = _calculateAccrual(msg.sender);
         uint totalAmount = stakedAmount[msg.sender] + reward;
         if (amount > totalAmount) {
             revert UNSTAKE_AMOUNT_EXCEEDS_STAKED_AMOUNT_ERROR();
-        }
-        if ((block.timestamp - stakingTime[msg.sender]) < minUnlockTime) {
-            revert UNSTAKE_TIME_NOT_ELAPSED_ERROR();
         }
 
         uint remainingAmount = totalAmount - amount;
@@ -67,9 +77,18 @@ contract Staking {
         emit Unstake(msg.sender, amount, block.timestamp);
     }
 
-    function _calculateAccrual() view internal returns (uint) {
-        uint timeElapsed = block.timestamp - stakingTime[msg.sender];
-        uint reward = stakedAmount[msg.sender] * stakingRewardPerMinUnlockTime * timeElapsed / minUnlockTime / 100;
+    function _calculateAccrual(address staker) internal view returns (uint) {
+        uint timeElapsed = block.timestamp - stakingTime[staker];
+        uint reward = (stakedAmount[staker] *
+            (stakingRewardPerMinUnlockTime *
+                uint(timeElapsed / minUnlockTime))) / 100;
         return reward;
     }
+
+    function getTotalRewards(address staker) external view returns (uint) {
+        uint reward = _calculateAccrual(staker);
+        return stakedAmount[staker] + reward;
+    }
+
+    fallback() external {}
 }

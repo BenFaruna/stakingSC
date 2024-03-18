@@ -10,13 +10,19 @@ async function main() {
     const staking = await ethers.getContractAt("Staking", stakingAddress);
     const token = await ethers.getContractAt("Token", tokenAddress);
 
-    const allowTx = await token.approve(stakingAddress, ethers.parseEther("1"));
-    allowTx.wait();
-    const tx = await staking.stake(ethers.parseEther("1"));
-    tx.wait();
+    // const allowTx = await token.approve(stakingAddress, ethers.parseEther("1"));
+    // allowTx.wait();
+    // const tx = await staking.stake(ethers.parseEther("1"));
+    // tx.wait();
+    // // console.log(tx);
 
     const stakedAmount = await staking.stakedAmount(owner.address);
     console.log("Staked amount: ", stakedAmount.toString());
+
+
+    const tx = await staking.unstake(ethers.parseEther("3"));
+    tx.wait();
+    // console.log(tx);
 
 
     // const balance = await token.balanceOf("0xb2b2130b4B83Af141cFc4C5E3dEB1897eB336D79");
